@@ -1,0 +1,21 @@
+logging:
+  file:
+    name: dsa-tracker-service.log
+  level:
+    org:
+      springframework:
+        web: DEBUG
+
+server:
+  port: 8080
+spring:
+  application:
+    name: dsa-tracker-service
+  datasource:
+    password: root
+    url: jdbc:mysql://localhost:3306/mydb
+    username: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
