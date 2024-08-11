@@ -1,6 +1,7 @@
-import { Button, Divider, Input, Modal, Select, Space } from "antd";
+import { Button, Divider, Input, message, Modal, Select, Space } from "antd";
 import { useRef, useState } from "react";
 import { PlusOutlined } from "@ant-design/icons";
+import axios from "axios";
 let index = 0;
 const companiesOptions = [
   {
@@ -91,6 +92,15 @@ const companiesOptions = [
   { value: "Sumo Logic", label: "Sumo Logic" },
   { value: "Airtable", label: "Airtable" },
 ];
+const initialFormData = {
+  problemName: "",
+  articleUrl: "",
+  videoUrl: "",
+  problemUrl: "",
+  difficulty: "EASY",
+  companies: [],
+  topic: "Array",
+};
 const AddProblem = () => {
   const [open, setOpen] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -100,15 +110,7 @@ const AddProblem = () => {
     "Graph",
     "Linked List",
   ]);
-  const [formData, setFormData] = useState({
-    problemName: "",
-    articleUrl: "",
-    videoUrl: "",
-    problemUrl: "",
-    difficulty: "easy",
-    companies: [],
-    topic: "",
-  });
+  const [formData, setFormData] = useState(initialFormData);
   const [name, setName] = useState("");
   const inputRef = useRef(null);
   const onNameChange = (event) => {
@@ -116,8 +118,6 @@ const AddProblem = () => {
   };
 
   const handleInput = (e) => {
-    console.log(e.target.name);
-    console.log(e.target.value);
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
   const handleSelect = (value, name) => {
@@ -139,10 +139,35 @@ const AddProblem = () => {
   };
   const handleOk = () => {
     setConfirmLoading(true);
-    setTimeout(() => {
-      setOpen(false);
+    saveProblem();
+  };
+
+  const saveProblem = async () => {
+    try {
+      if (!validateFormData(formData)) return;
+      formData.companies = formData.companies.map((company) => {
+        return { name: company };
+      });
+      console.log(formData.companies);
+      console.log(JSON.stringify(formData));
+      const res = await axios.post(import.meta.env.VITE_PROBLEM_API, formData);
+      if (res.status === 201) {
+        message.success("Problem");
+        setFormData(initialFormData);
+      }
+    } catch (error) {
+      message.error("Data not saved");
+      console.error("Error while saving new Problem: ", error.message);
+    } finally {
       setConfirmLoading(false);
-    }, 2000);
+    }
+  };
+
+  const validateFormData = (data) => {
+    const isValid = data.problemName && data.topic && data.problemUrl;
+    if (!isValid)
+      message.error("Problem name, Topic and problem url should not be empty!");
+    return isValid;
   };
   const handleCancel = () => {
     setOpen(false);
@@ -166,35 +191,40 @@ const AddProblem = () => {
         confirmLoading={confirmLoading}
         onCancel={handleCancel}>
         <div className=" flex flex-col gap-2">
+          {/* PROBLEM NAME */}
           <Input
             placeholder="Problem Name"
             value={formData.problemName}
             onChange={handleInput}
             name="problemName"
           />
+          {/* DIFFICULTY  */}
           <Select
-            defaultValue="Easy"
+            defaultValue="EASY"
             onChange={(value) => handleSelect(value, "difficulty")}
             style={{
               width: 120,
             }}
             options={[
               {
-                value: "easy",
+                value: "EASY",
                 label: "Easy",
               },
               {
-                value: "medium",
+                value: "MEDIUM",
                 label: "Medium",
               },
               {
-                value: "hard",
+                value: "HARD",
                 label: "Hard",
               },
             ]}
           />
+
+          {/* TOPIC  */}
           <Select
             onChange={handleSelectTopic}
+            value={formData.topic}
             style={{
               width: 300,
             }}
@@ -230,6 +260,8 @@ const AddProblem = () => {
               value: item,
             }))}
           />
+
+          {/* COMPANIES  */}
           <Select
             mode="multiple"
             placeholder="Companies"
@@ -240,6 +272,8 @@ const AddProblem = () => {
             }}
             options={companiesOptions}
           />
+
+          {/* PROBLEM LINK  */}
           <Input
             placeholder="Problem Link"
             value={formData.problemUrl}
